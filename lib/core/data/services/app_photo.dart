@@ -12,7 +12,7 @@ import '../../../../core/constants/constants.dart';
 
 class AppPhotoService {
   static Future<File?> getImageFromGallery() async {
-    File? _image;
+    File? image;
     final picker = ImagePicker();
 
     final pickedFile = await picker.pickImage(
@@ -21,16 +21,16 @@ class AppPhotoService {
     );
 
     if (pickedFile != null) {
-      _image = await _goToImageCropper(File(pickedFile.path));
-      return _image;
+      image = await _goToImageCropper(File(pickedFile.path));
+      return image;
     } else {
       print('No image selected.');
     }
-    return _image;
+    return image;
   }
 
   static Future<File?> getImageFromCamera() async {
-    File? _image;
+    File? image;
     final picker = ImagePicker();
 
     final pickedFile = await picker.pickImage(
@@ -39,42 +39,44 @@ class AppPhotoService {
     );
 
     if (pickedFile != null) {
-      _image = await _goToImageCropper(File(pickedFile.path));
-      return _image;
+      image = await _goToImageCropper(File(pickedFile.path));
+      return image;
     } else {
       print('No image selected.');
     }
-    return _image;
+    return image;
   }
 
   /* <---- Image Cropper ----> */
   static Future<File> _goToImageCropper(File? imageFile) async {
-    File? croppedFile = await ImageCropper.cropImage(
-        sourcePath: imageFile!.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        androidUiSettings: const AndroidUiSettings(
-          toolbarTitle: 'Prefered Size 500x500',
-          toolbarColor: AppColors.primaryColor,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: true,
-        ),
-        iosUiSettings: const IOSUiSettings(
+    File? croppedFile = (await ImageCropper().cropImage(
+      sourcePath: imageFile!.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      uiSettings: [
+        AndroidUiSettings(
+            toolbarTitle: 'Cropper',
+            toolbarColor: Colors.deepOrange,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false),
+        IOSUiSettings(
           title: 'Cropper',
-        ));
+        ),
+      ],
+    )) as File?;
     return croppedFile!;
   }
 
   /// Gives a File From an url
   /// If the file is in cache you will get the cached file
   static Future<File> fileFromImageUrl(String imageUrl) async {
-    File? _gotImage;
+    File? gotImage;
 
     // IF the file is available in cache
-    File? _imageFromCache = await getImageFromCache(imageUrl);
+    File? imageFromCache = await getImageFromCache(imageUrl);
 
-    if (_imageFromCache != null) {
-      _gotImage = _imageFromCache;
+    if (imageFromCache != null) {
+      gotImage = imageFromCache;
     } else {
       final response = await http.get(Uri.parse(imageUrl));
 
@@ -85,31 +87,31 @@ class AppPhotoService {
         'response': response.bodyBytes,
       };
 
-      File _file =
+      File file =
           await Executor().execute(fun1: _writeFileToDiskIsolated, arg1: data);
 
-      _gotImage = _file;
+      gotImage = file;
     }
 
-    return _gotImage;
+    return gotImage;
   }
 
   static Future<File> _writeFileToDiskIsolated(
-      Map<String, dynamic> data) async {
-    File _theFile = File(data['path'] + 'imagetest');
-    _theFile.writeAsBytes(data['response']);
-    return _theFile;
+      Map<String, dynamic> data, TypeSendPort typesentPort) async {
+    File theFile = File(data['path'] + 'imagetest');
+    theFile.writeAsBytes(data['response']);
+    return theFile;
   }
 
   /// Get Image From Cache
   static Future<File?> getImageFromCache(String imageUrl) async {
-    File? _dartFile;
+    File? dartFile;
     FileInfo? file = await DefaultCacheManager().getFileFromCache(imageUrl);
     if (file != null) {
-      _dartFile = file.file;
+      dartFile = file.file;
     } else {
-      _dartFile = null;
+      dartFile = null;
     }
-    return _dartFile;
+    return dartFile;
   }
 }
